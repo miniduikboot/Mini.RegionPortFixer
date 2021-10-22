@@ -62,7 +62,7 @@ namespace Mini.RegionPortFixer
 		public override bool Unload()
 		{
 			this.Log.LogInfo("Unloading Mini.RegionPortFixer");
-			this.Harmony.UnpatchAll();
+			this.Harmony.UnpatchSelf();
 			return base.Unload();
 		}
 
