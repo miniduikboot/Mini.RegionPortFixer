@@ -1,0 +1,5 @@
+<RuleSet Name="AU Client mod ruleset" ToolsVersion="0">
+	<Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
+		<Rule Id="SA1313" Action="None" /> <!-- Harmony patches require argument names to start with __ -->
+	</Rules>
+</RuleSet>

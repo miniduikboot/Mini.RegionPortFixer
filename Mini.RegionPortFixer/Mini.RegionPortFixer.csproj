@@ -4,7 +4,8 @@
 		<Version>1.0.0</Version>
 
 		<EnableNETAnalyzers>true</EnableNETAnalyzers>
-		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<CodeAnalysisRuleSet>Rules.ruleset</CodeAnalysisRuleSet>
+		<GenerateDocumentationFile>false</GenerateDocumentationFile>
 		<Nullable>enable</Nullable>
 
 		<Description>Allows you to use ports different that 22023</Description>

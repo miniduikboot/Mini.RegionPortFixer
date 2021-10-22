@@ -1,44 +1,61 @@
+// <copyright file="InnerNetClientPatch.cs" company="miniduikboot">
+// This file is part of Mini.RegionPortFixer.
+//
+// Mini.RegionPortFixer is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Mini.RegionPortFixer is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Mini.RegionPortFixer.  If not, see https://www.gnu.org/licenses/
+// </copyright>
 
 // COPYRIGHT NOTE: Some methods from this file have been copied from Among Us and are not covered under the GPL. When this is the case, a comment has been added to these methods.
 namespace Mini.RegionPortFixer.Patches
 {
+	using System;
+	using System.Net;
 	using HarmonyLib;
 	using InnerNet;
 	using UnityEngine;
-	using System;
-	using System.Net;
 
 	[HarmonyPatch(typeof(InnerNetClient), nameof(InnerNetClient.SetEndpoint))]
-	public static class InnerNetClientSetEndpointPatch
+	public static class IncSetEndpointPatch
 	{
 		public static void Prefix(InnerNetClient __instance, ref string addr, ref ushort port)
 		{
-			Debug.Log($"MRPF: Connecting to {addr}:{port}");
+			RegionPortFixerPlugin.LogMessage($"MRPF: Connecting to {addr}:{port}");
+
 			// TODO prevent local game to get corrected
 			ServerManager mgr = DestroyableSingleton<ServerManager>.Instance;
 			if (string.Equals(addr, mgr.OnlineNetAddress, StringComparison.Ordinal) && __instance.GameMode == GameModes.OnlineGame)
 			{
-				Debug.Log($"MRPF: Correcting port to {mgr.OnlineNetPort}");
+				RegionPortFixerPlugin.LogMessage($"MRPF: Correcting port to {mgr.OnlineNetPort}");
 				port = mgr.OnlineNetPort;
 			}
 		}
 	}
 
 	[HarmonyPatch(typeof(InnerNetClient), nameof(InnerNetClient.Connect))]
-	public static class INCConnectPatch
+	public static class IncConnectPatch
 	{
 		public static void Prefix(InnerNetClient __instance)
 		{
-			Debug.Log($"MPRF: joining on {__instance.networkAddress}:{__instance.networkPort}, connected: {__instance.AmConnected}");
+			RegionPortFixerPlugin.LogMessage($"joining on {__instance.networkAddress}:{__instance.networkPort}, connected: {__instance.AmConnected}");
 		}
 	}
 
 	[HarmonyPatch(typeof(InnerNetClient), nameof(InnerNetClient.JoinGame))]
-	public static class INCJoinGamePatch
+	public static class IncJoinGamePatch
 	{
 		public static void Prefix(InnerNetClient __instance)
 		{
-			Debug.Log($"MPRF: joining on {__instance.networkAddress}:{__instance.networkPort}, connected: {__instance.AmConnected}");
+			RegionPortFixerPlugin.LogMessage($"joining on {__instance.networkAddress}:{__instance.networkPort}, connected: {__instance.AmConnected}");
 		}
 	}
 
@@ -48,54 +65,58 @@ namespace Mini.RegionPortFixer.Patches
 		public static bool Prefix(DnsRegionInfo __instance)
 		{
 			// AUTHORSHIP: This method is copied from Among Us 2021.6.30 and is not covered under the GPL
-			Debug.Log($"MPRF: Populating {__instance.Name} with fqdn {__instance.Fqdn}");
+			RegionPortFixerPlugin.LogMessage($"Populating {__instance.Name} with fqdn {__instance.Fqdn}");
 
 			try
 			{
 				IPAddress[] hostAddresses = Dns.GetHostAddresses(__instance.Fqdn);
 				if (hostAddresses == null)
 				{
-					Debug.Log("MPRF: HA null!!!");
+					RegionPortFixerPlugin.LogMessage("HA null!!!");
 					return false;
 				}
-				Debug.Log($"MPRF: Got {hostAddresses.Length} servers");
+
+				RegionPortFixerPlugin.LogMessage($"Got {hostAddresses.Length} servers");
 				ServerInfo[] array = new ServerInfo[hostAddresses.Length];
 				for (int i = 0; i < hostAddresses.Length; i++)
 				{
-					Debug.Log($"MPRF: Got addr {hostAddresses[i].ToString()}");
-					array[i] = new ServerInfo($"{__instance.Name}-{i}", ((object)hostAddresses[i]).ToString(), __instance.Port);
+					RegionPortFixerPlugin.LogMessage($"Got addr {hostAddresses[i]}");
+					array[i] = new ServerInfo($"{__instance.Name}-{i}", hostAddresses[i].ToString(), __instance.Port);
 				}
+
 				__instance.cachedServers = array;
 			}
 			catch (Exception e)
 			{
-				Debug.Log($"MPRF: Failed to populate, {e.Message}; {e.StackTrace}");
+				RegionPortFixerPlugin.LogMessage($"Failed to populate, {e.Message}; {e.StackTrace}");
 				__instance.cachedServers = new ServerInfo[1]
 				{
 					// FIX: do not hardcode 22023 here
-					new ServerInfo(__instance.Name ?? "", __instance.DefaultIp, __instance.Port)
+					new ServerInfo(__instance.Name ?? string.Empty, __instance.DefaultIp, __instance.Port),
+
 					// END OF FIX
 				};
 			}
+
 			// Do not execute original function
 			return false;
 		}
-
 	}
 
 	[HarmonyPatch(typeof(JoinGameButton), nameof(JoinGameButton.OnClick))]
-	public static class JGBOnClickPatch
+	public static class JgbOnClickPatch
 	{
 		public static bool Prefix(JoinGameButton __instance)
 		{
 			// AUTHORSHIP: This method is copied from Among Us 2021.6.30 and is not covered under the GPL
 			// Debug log statements are added
-			Debug.Log($"MPRF: JoingameButton clicked, GameMode {__instance.GameMode}");
+			RegionPortFixerPlugin.LogMessage($"JoingameButton clicked, GameMode {__instance.GameMode}");
 			if (string.IsNullOrWhiteSpace(__instance.netAddress))
 			{
-				Debug.Log("MPRF: netaddr is null or whitespace");
+				RegionPortFixerPlugin.LogMessage("netaddr is null or whitespace");
 				return false;
 			}
+
 			if (__instance.GameMode == GameModes.OnlineGame && !DestroyableSingleton<AccountManager>.Instance.CanPlayOnline())
 			{
 				AmongUsClient.Instance.LastDisconnectReason = DisconnectReasons.NotAuthorized;
@@ -103,11 +124,12 @@ namespace Mini.RegionPortFixer.Patches
 			}
 			else
 			{
-				if ((bool)NameTextBehaviour.Instance && NameTextBehaviour.Instance.ShakeIfInvalid())
+				if (NameTextBehaviour.Instance && NameTextBehaviour.Instance.ShakeIfInvalid())
 				{
-					Debug.Log("MTRF: Shaking");
+					RegionPortFixerPlugin.LogMessage("MTRF: Shaking");
 					return false;
 				}
+
 				if (StatsManager.Instance.AmBanned)
 				{
 					AmongUsClient.Instance.LastDisconnectReason = DisconnectReasons.IntentionalLeaving;
@@ -117,19 +139,15 @@ namespace Mini.RegionPortFixer.Patches
 				{
 					if (!DestroyableSingleton<MatchMaker>.Instance.Connecting(__instance))
 					{
-						Debug.Log("MTRF: already connecting");
+						RegionPortFixerPlugin.LogMessage("MTRF: already connecting");
 						return false;
 					}
+
 					AmongUsClient.Instance.GameMode = __instance.GameMode;
 					if (__instance.GameMode == GameModes.OnlineGame)
 					{
-						Debug.Log("MTRF: online game");
+						RegionPortFixerPlugin.LogMessage("MTRF: online game");
 
-						// EDIT: stop hardcoding port
-						//ServerManager mgr = DestroyableSingleton<ServerManager>.Instance;
-						//AmongUsClient.Instance.SetEndpoint(mgr.OnlineNetAddress, mgr.OnlineNetPort);
-						// END OF EDIT
-						// TODO: find out why this edit is not needed
 						AmongUsClient.Instance.SetEndpoint(DestroyableSingleton<ServerManager>.Instance.OnlineNetAddress, 22023);
 
 						AmongUsClient.Instance.MainMenuScene = "MMOnline";
@@ -144,26 +162,29 @@ namespace Mini.RegionPortFixer.Patches
 									component.ResetText();
 								}
 							}
-							__instance.StartCoroutine(Effects.SwayX(__instance.GameIdText.transform));
+
+							_ = __instance.StartCoroutine(Effects.SwayX(__instance.GameIdText.transform));
 							DestroyableSingleton<MatchMaker>.Instance.NotConnecting();
-							Debug.Log("MTRF: code bad");
+							RegionPortFixerPlugin.LogMessage("MTRF: code bad");
 							return false;
 						}
+
 						AmongUsClient.Instance.GameId = num;
 					}
 					else
 					{
-						Debug.Log("MTRF: not online game");
+						RegionPortFixerPlugin.LogMessage("MTRF: not online game");
 						AmongUsClient.Instance.SetEndpoint(__instance.netAddress, 22023);
 						AmongUsClient.Instance.GameId = 32;
 						AmongUsClient.Instance.GameMode = GameModes.LocalGame;
 						AmongUsClient.Instance.MainMenuScene = "MatchMaking";
 					}
-					__instance.StartCoroutine(__instance.JoinGame());
+
+					_ = __instance.StartCoroutine(__instance.JoinGame());
 				}
 			}
-			return false;
 
+			return false;
 		}
 	}
 }

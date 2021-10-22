@@ -17,7 +17,6 @@
 
 namespace Mini.RegionPortFixer
 {
-	using System;
 	using BepInEx;
 	using BepInEx.IL2CPP;
 	using BepInEx.Logging;
@@ -28,7 +27,7 @@ namespace Mini.RegionPortFixer
 
 	/**
 	 * <summary>
-	 * Plugin that installs user specified servers into the region file.
+	 * Plugin that makes it possible to connect on non-standard ports.
 	 * </summary>
 	  */
 	[BepInPlugin(Id)]
@@ -42,20 +41,23 @@ namespace Mini.RegionPortFixer
 
 		public Harmony Harmony { get; } = new Harmony(Id);
 
-		internal static ManualLogSource Logger;
+		private static ManualLogSource logger;
+
+		public static void LogMessage(string log)
+		{
+			logger?.LogInfo(log);
+		}
 
 		/**
 		 * <summary>
-		 * Load the plugin and install the servers.
+		 * Load the patches needed to correct the port.
 		 * </summary>
 		 */
 		public override void Load()
 		{
 			this.Log.LogInfo("Starting Mini.RegionPortFixer r24");
-			Logger = this.Log;
-
+			logger = this.Log;
 			this.Harmony.PatchAll();
-
 			this.Log.LogInfo("Started Mini.RegionPortFixer");
 		}
 
@@ -65,6 +67,5 @@ namespace Mini.RegionPortFixer
 			this.Harmony.UnpatchSelf();
 			return base.Unload();
 		}
-
 	}
 }
