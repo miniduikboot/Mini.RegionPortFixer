@@ -13,8 +13,8 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<GameVersion>2021.6.30i</GameVersion>
-		<GameProvider>Github</GameProvider>
+		<GameVersion>$(AMONGUS)</GameVersion>
+		<GameProvider>Static</GameProvider>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -19,10 +19,59 @@
 namespace Mini.RegionPortFixer.Patches
 {
 	using System;
-	using System.Net;
 	using HarmonyLib;
 	using InnerNet;
-	using UnityEngine;
+	using Hazel.Udp;
+	using Il2CppSystem.Net;
+
+	// From Reactor
+	internal static class CustomServersPatch
+	{
+		/// <summary>
+		/// Send the account id only to Among Us official servers
+		/// </summary>
+		[HarmonyPatch(typeof(InnerNetClient), nameof(InnerNetClient.GetConnectionData))]
+		public static class DontSendAccountIdPatch
+		{
+			public static void Prefix(ref bool useDtlsLayout)
+			{
+				var serverManager = ServerManager.Instance;
+				DnsRegionInfo? region = serverManager.CurrentRegion.TryCast<DnsRegionInfo>();
+				if (region == null || !region.Fqdn.EndsWith("among.us"))
+				{
+					RegionPortFixerPlugin.LogMessage($"MPRF: not officials, disabling DTLS layout");
+					useDtlsLayout = false;
+				}
+				else
+				{
+					RegionPortFixerPlugin.LogMessage($"MPRF: connecting to officials, enabling DTLS layout");
+				}
+			}
+		}
+
+		/// <summary>
+		/// Encrypt connection only to Among Us official servers
+		/// </summary>
+		[HarmonyPatch(typeof(AuthManager), nameof(AuthManager.CreateDtlsConnection))]
+		public static class DontEncryptCustomServersPatch
+		{
+			public static bool Prefix(ref UnityUdpClientConnection __result, string targetIp, ushort targetPort)
+			{
+				var serverManager = ServerManager.Instance;
+				DnsRegionInfo? region = serverManager.CurrentRegion.TryCast<DnsRegionInfo>();
+				if (region == null || !region.Fqdn.EndsWith("among.us"))
+				{
+					RegionPortFixerPlugin.LogMessage($"MPRF: not officials, disabling DTLS connection");
+					var remoteEndPoint = new IPEndPoint(IPAddress.Parse(targetIp), targetPort - 3);
+					__result = new UnityUdpClientConnection(remoteEndPoint);
+					return false;
+				}
+				RegionPortFixerPlugin.LogMessage($"MPRF: connecting to officials, enabling DTLS connection");
+
+				return true;
+			}
+		}
+	}
 
 	[HarmonyPatch(typeof(InnerNetClient), nameof(InnerNetClient.SetEndpoint))]
 	public static class IncSetEndpointPatch
@@ -40,6 +89,7 @@ namespace Mini.RegionPortFixer.Patches
 			}
 		}
 	}
+	// End of Reactor code
 
 	[HarmonyPatch(typeof(InnerNetClient), nameof(InnerNetClient.Connect))]
 	public static class IncConnectPatch
