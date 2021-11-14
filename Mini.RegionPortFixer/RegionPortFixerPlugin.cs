@@ -21,9 +21,6 @@ namespace Mini.RegionPortFixer
 	using BepInEx.IL2CPP;
 	using BepInEx.Logging;
 	using HarmonyLib;
-#if REACTOR
-	using Reactor;
-#endif
 
 	/**
 	 * <summary>
@@ -32,9 +29,6 @@ namespace Mini.RegionPortFixer
 	  */
 	[BepInPlugin(Id)]
 	[BepInProcess("Among Us.exe")]
-#if REACTOR
-	[ReactorPluginSide(PluginSide.ClientOnly)]
-#endif
 	public class RegionPortFixerPlugin : BasePlugin
 	{
 		private const string Id = "at.duikbo.regionportfixer";
