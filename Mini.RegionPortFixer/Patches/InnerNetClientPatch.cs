@@ -39,12 +39,12 @@ namespace Mini.RegionPortFixer.Patches
 				DnsRegionInfo? region = serverManager.CurrentRegion.TryCast<DnsRegionInfo>();
 				if (region == null || !region.Fqdn.EndsWith("among.us"))
 				{
-					RegionPortFixerPlugin.LogMessage($"MPRF: not officials, disabling DTLS layout");
+					RegionPortFixerPlugin.LogMessage($"MRPF: not officials, disabling DTLS layout");
 					useDtlsLayout = false;
 				}
 				else
 				{
-					RegionPortFixerPlugin.LogMessage($"MPRF: connecting to officials, enabling DTLS layout");
+					RegionPortFixerPlugin.LogMessage($"MRPF: connecting to officials, enabling DTLS layout");
 				}
 			}
 		}
@@ -62,6 +62,7 @@ namespace Mini.RegionPortFixer.Patches
 				if (region == null || !region.Fqdn.EndsWith("among.us"))
 				{
 					RegionPortFixerPlugin.LogMessage($"MPRF: not officials, disabling DTLS connection");
+					ModManager.Instance.ShowModStamp();
 					var remoteEndPoint = new IPEndPoint(IPAddress.Parse(targetIp), targetPort - 3);
 					__result = new UnityUdpClientConnection(remoteEndPoint);
 					return false;
